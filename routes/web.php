@@ -11,14 +11,11 @@
 |
 */
 
-Route::get('/test', function () {
-   dd('here i am');
+Route::get('/', function () {
+    return view('layouts.app');
 });
 
 Auth::routes();
 
-Route::get('/home', 'HomeController@index')->name('home');
-
-Auth::routes();
-
-Route::get('/home', 'HomeController@index')->name('home');
+Route::get('/home', 'HomeController@index')
+     ->name('home');
