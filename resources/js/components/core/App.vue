@@ -9,12 +9,12 @@
 <script>
     import Navigation from './NavBar'
     import Footer from "./Footer";
+    import notification from 'shapla-notifications';
 
     export default {
-        name: "App",
         components: {
             Footer,
-            'nav-bar': Navigation,
+            'nav-bar': Navigation
         }
     }
 </script>

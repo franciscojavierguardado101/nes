@@ -12,10 +12,18 @@
 */
 
 Route::get('/', function () {
+//    \Illuminate\Support\Facades\Auth::logout();
     return view('layouts.app');
+});
+
+Route::get('/auth/user', function () {
+    return \Illuminate\Support\Facades\Auth::user() ?? null;
 });
 
 Auth::routes();
 
 Route::get('/home', 'HomeController@index')
      ->name('home');
+
+Route::post('/post/create','PostController@store');
+Route::get('/post','PostController@index');

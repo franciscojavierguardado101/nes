@@ -59,11 +59,6 @@ class RegisterController extends Controller {
      * @return \App\User
      */
     protected function create(array $data) {
-
-        $user = new User();
-        $user->popularUser()
-             ->toSql();
-
         return User::create([
             'name' => $data['name'],
             'email' => $data['email'],

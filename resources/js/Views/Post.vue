@@ -4,11 +4,18 @@
             <div class="row">
                 <div v-for="item in items" class="col-4 text-center">
                     <div class="mx-auto">
-                            <router-link :to="{ name: 'postview', params: { postId: 1 }}">
+                        <a :href="item.socialMedia" target="_blank" class="social" v-if="hasSocialMediaLink(item)">
                             <figure class="figure">
-                                <img src="https://loremflickr.com/320/240" class="figure-img img-fluid rounded"
+                                <img v-bind:src="item.image" class="figure-img img-fluid rounded"
                                      alt="...">
-                                <figcaption class="figure-caption">{{item.message}}</figcaption>
+                                <figcaption class="figure-caption">{{item.title}}</figcaption>
+                            </figure>
+                        </a>
+                        <router-link :to="{ name: 'postview', params: { postId: item.id }}" v-else>
+                            <figure class="figure">
+                                <img v-bind:src="item.image" class="figure-img img-fluid rounded"
+                                     alt="...">
+                                <figcaption class="figure-caption">{{item.title}}</figcaption>
                             </figure>
                         </router-link>
 
@@ -41,19 +48,26 @@
 </template>
 
 <script>
+
     export default {
-        name: "Post",
+        name: "Post", components: {},
         data: function () {
             return {
-                items: [
-                    {message: 'Title'},
-                    {message: 'Title'},
-                    {message: 'Title'},
-                    // {message: 'Title'},
-                    // {message: 'Title'},
-                    // {message: 'Title'}
-                ]
+                items: [],
             }
+        }, methods: {
+            hasSocialMediaLink(item) {
+                return !_.isEmpty(item.socialMedia)
+            },
+        }
+        ,
+        mounted() {
+            axios.get('post').then((response) => {
+                    this.items = response.data;
+                })
+                .catch(function (error) {
+                    console.log(error);
+                });
         }
     }
 </script>
