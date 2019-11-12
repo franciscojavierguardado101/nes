@@ -1985,22 +1985,66 @@ __webpack_require__.r(__webpack_exports__);
   components: {},
   data: function data() {
     return {
-      items: []
+      items: [],
+      totalPost: 0,
+      currentPage: 1,
+      nextPageUrl: null,
+      lastPageUrl: null
     };
   },
   methods: {
     hasSocialMediaLink: function hasSocialMediaLink(item) {
       return !_.isEmpty(item.socialMedia);
+    },
+    getPosts: function getPosts(param, event) {
+      var _this = this;
+
+      var url = 'post';
+
+      if (param) {
+        if (!_.isEmpty(this.nextPageUrl)) {
+          var nextPageUrl = new URL(this.nextPageUrl);
+          url = nextPageUrl.pathname + nextPageUrl.search;
+        }
+      } else {
+        if (!param && !_.isEmpty(this.lastPageUrl)) {
+          var lastPageUrl = new URL(this.lastPageUrl);
+          url = lastPageUrl.pathname + lastPageUrl.search;
+        }
+      }
+
+      axios.get(url).then(function (response) {
+        _this.items = response.data.data;
+        _this.totalPost = response.data.total;
+        _this.currentPage = response.data.current_page;
+        _this.lastPageUrl = response.data.prev_page_url;
+        _this.nextPageUrl = response.data.next_page_url;
+      })["catch"](function (error) {
+        console.log(error);
+      });
+    },
+    goToPostAfterSocial: function goToPostAfterSocial(postId) {
+      this.$router.push({
+        name: 'postview',
+        params: {
+          postId: postId
+        }
+      });
     }
   },
   mounted: function mounted() {
-    var _this = this;
-
-    axios.get('post').then(function (response) {
-      _this.items = response.data;
-    })["catch"](function (error) {
-      console.log(error);
-    });
+    this.getPosts();
+  },
+  computed: {
+    hasNextPage: function hasNextPage() {
+      return !_.isEmpty(this.nextPageUrl);
+    },
+    hasPreviousPage: function hasPreviousPage() {
+      return !_.isEmpty(this.lastPageUrl);
+    },
+    isFirstPage: function isFirstPage() {
+      return this.currentPage === 1;
+    }
   }
 });
 
@@ -2015,6 +2059,7 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
+//
 //
 //
 //
@@ -2089,13 +2134,17 @@ __webpack_require__.r(__webpack_exports__);
   methods: {
     onSubmit: function onSubmit(evt) {
       evt.preventDefault();
+      var routes = this;
       axios.post('post/create', {
         title: this.form.title,
         description: this.form.description,
         image: this.form.image,
         socialLink: this.form.socialLink
       }).then(function (response) {
-        console.log(response);
+        routes.$router.push({
+          name: 'home'
+        });
+        console.log('here');
       })["catch"](function (error) {
         console.log(error);
       });
@@ -2199,14 +2248,31 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
-//
-//
-//
-//
-//
-//
 /* harmony default export */ __webpack_exports__["default"] = ({
-  name: "PostView"
+  name: "PostView",
+  data: function data() {
+    return {
+      post: ''
+    };
+  },
+  beforeCreate: function beforeCreate() {
+    var _this = this;
+
+    axios.get('/post/' + this.$route.params.postId).then(function (response) {
+      _this.post = response.data;
+    })["catch"](function (error) {
+      console.log(error);
+    });
+  },
+  computed: {
+    getPostImage: function getPostImage() {
+      if (this.post.image) {
+        return this.post.image;
+      } else {
+        return "";
+      }
+    }
+  }
 });
 
 /***/ }),
@@ -68381,7 +68447,12 @@ var render = function() {
                       "a",
                       {
                         staticClass: "social",
-                        attrs: { href: item.socialMedia, target: "_blank" }
+                        attrs: { href: item.socialMedia, target: "_blank" },
+                        on: {
+                          click: function($event) {
+                            return _vm.goToPostAfterSocial(item.id)
+                          }
+                        }
                       },
                       [
                         _c("figure", { staticClass: "figure" }, [
@@ -68424,7 +68495,47 @@ var render = function() {
         0
       ),
       _vm._v(" "),
-      _vm._m(0)
+      _c("div", { staticClass: "row text-center justify-content-center" }, [
+        _c("nav", { attrs: { "aria-label": "Page navigation" } }, [
+          _c("ul", { staticClass: "pagination" }, [
+            !_vm.isFirstPage && _vm.hasPreviousPage
+              ? _c(
+                  "li",
+                  {
+                    staticClass: "page-item",
+                    on: {
+                      click: function($event) {
+                        return _vm.getPosts(false, $event)
+                      }
+                    }
+                  },
+                  [_vm._m(0)]
+                )
+              : _vm._e(),
+            _vm._v(" "),
+            _c("li", { staticClass: "page-item" }, [
+              _c("a", { staticClass: "page-link", attrs: { href: "#" } }, [
+                _vm._v(_vm._s(this.currentPage))
+              ])
+            ]),
+            _vm._v(" "),
+            _vm.hasNextPage
+              ? _c(
+                  "li",
+                  {
+                    staticClass: "page-item",
+                    on: {
+                      click: function($event) {
+                        return _vm.getPosts(true, $event)
+                      }
+                    }
+                  },
+                  [_vm._m(1)]
+                )
+              : _vm._e()
+          ])
+        ])
+      ])
     ])
   ])
 }
@@ -68434,64 +68545,29 @@ var staticRenderFns = [
     var _h = _vm.$createElement
     var _c = _vm._self._c || _h
     return _c(
-      "div",
-      { staticClass: "row text-center justify-content-center" },
+      "a",
+      {
+        staticClass: "page-link",
+        attrs: { href: "#", "aria-label": "Previous" }
+      },
       [
-        _c("nav", { attrs: { "aria-label": "Page navigation" } }, [
-          _c("ul", { staticClass: "pagination" }, [
-            _c("li", { staticClass: "page-item" }, [
-              _c(
-                "a",
-                {
-                  staticClass: "page-link",
-                  attrs: { href: "#", "aria-label": "Previous" }
-                },
-                [
-                  _c("span", { attrs: { "aria-hidden": "true" } }, [
-                    _vm._v("«")
-                  ]),
-                  _vm._v(" "),
-                  _c("span", { staticClass: "sr-only" }, [_vm._v("Previous")])
-                ]
-              )
-            ]),
-            _vm._v(" "),
-            _c("li", { staticClass: "page-item" }, [
-              _c("a", { staticClass: "page-link", attrs: { href: "#" } }, [
-                _vm._v("1")
-              ])
-            ]),
-            _vm._v(" "),
-            _c("li", { staticClass: "page-item" }, [
-              _c("a", { staticClass: "page-link", attrs: { href: "#" } }, [
-                _vm._v("2")
-              ])
-            ]),
-            _vm._v(" "),
-            _c("li", { staticClass: "page-item" }, [
-              _c("a", { staticClass: "page-link", attrs: { href: "#" } }, [
-                _vm._v("3")
-              ])
-            ]),
-            _vm._v(" "),
-            _c("li", { staticClass: "page-item" }, [
-              _c(
-                "a",
-                {
-                  staticClass: "page-link",
-                  attrs: { href: "#", "aria-label": "Next" }
-                },
-                [
-                  _c("span", { attrs: { "aria-hidden": "true" } }, [
-                    _vm._v("»")
-                  ]),
-                  _vm._v(" "),
-                  _c("span", { staticClass: "sr-only" }, [_vm._v("Next")])
-                ]
-              )
-            ])
-          ])
-        ])
+        _c("span", { attrs: { "aria-hidden": "true" } }, [_vm._v("«")]),
+        _vm._v(" "),
+        _c("span", { staticClass: "sr-only" }, [_vm._v("Previous")])
+      ]
+    )
+  },
+  function() {
+    var _vm = this
+    var _h = _vm.$createElement
+    var _c = _vm._self._c || _h
+    return _c(
+      "a",
+      { staticClass: "page-link", attrs: { href: "#", "aria-label": "Next" } },
+      [
+        _c("span", { attrs: { "aria-hidden": "true" } }, [_vm._v("»")]),
+        _vm._v(" "),
+        _c("span", { staticClass: "sr-only" }, [_vm._v("Next")])
       ]
     )
   }
@@ -68699,182 +68775,160 @@ var render = function() {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  return _vm._m(0)
+  return _c("div", { staticClass: "container" }, [
+    _c("div", { staticClass: "container text-center" }, [
+      _c("figure", { staticClass: "figure" }, [
+        _c("img", {
+          staticClass: "figure-img img-fluid",
+          attrs: { src: _vm.getPostImage, alt: "..." }
+        })
+      ]),
+      _vm._v(" "),
+      _c("blockquote", { staticClass: "blockquote" }, [
+        _c("p", { staticClass: "mb-0" }, [_vm._v(_vm._s(this.post.title))])
+      ]),
+      _vm._v(" "),
+      _c("p", [_vm._v(_vm._s(this.post.description))])
+    ]),
+    _vm._v(" "),
+    _vm._m(0)
+  ])
 }
 var staticRenderFns = [
   function() {
     var _vm = this
     var _h = _vm.$createElement
     var _c = _vm._self._c || _h
-    return _c("div", { staticClass: "container" }, [
-      _c("div", { staticClass: "container text-center" }, [
-        _c("figure", { staticClass: "figure" }, [
-          _c("img", {
-            staticClass: "figure-img img-fluid",
-            attrs: { src: "https://loremflickr.com/320/240", alt: "..." }
-          })
-        ]),
-        _vm._v(" "),
-        _c("blockquote", { staticClass: "blockquote" }, [
-          _c("p", { staticClass: "mb-0" }, [
-            _vm._v(
-              "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a\n                ante."
-            )
-          ])
-        ]),
-        _vm._v(" "),
-        _c("p", [
-          _vm._v(
-            "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the\n            industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and\n            scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap\n            into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the\n            release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing\n            software like Aldus PageMaker including versions of Lorem Ipsum. "
-          )
-        ])
-      ]),
-      _vm._v(" "),
-      _c("div", { staticClass: "text-center row bootstrap snippets" }, [
-        _c("div", { staticClass: "col-md-6 col-md-offset-2 col-sm-12" }, [
-          _c("div", { staticClass: "comment-wrapper" }, [
-            _c("div", { staticClass: "panel panel-info" }, [
-              _c("div", { staticClass: "panel-heading" }, [
-                _vm._v(
-                  "\n                        Comments\n                    "
-                )
-              ]),
+    return _c("div", { staticClass: "text-center row bootstrap snippets" }, [
+      _c("div", { staticClass: "col-md-6 col-md-offset-2 col-sm-12" }, [
+        _c("div", { staticClass: "comment-wrapper" }, [
+          _c("div", { staticClass: "panel panel-info" }, [
+            _c("div", { staticClass: "panel-heading" }, [
+              _vm._v("\n                        Comments\n                    ")
+            ]),
+            _vm._v(" "),
+            _c("div", { staticClass: "panel-body" }, [
+              _c("textarea", {
+                staticClass: "form-control",
+                attrs: { placeholder: "write a comment...", rows: "3" }
+              }),
               _vm._v(" "),
-              _c("div", { staticClass: "panel-body" }, [
-                _c("textarea", {
-                  staticClass: "form-control",
-                  attrs: { placeholder: "write a comment...", rows: "3" }
-                }),
-                _vm._v(" "),
-                _c("br"),
-                _vm._v(" "),
-                _c(
-                  "button",
-                  {
-                    staticClass: "btn btn-info pull-right",
-                    attrs: { type: "button" }
-                  },
-                  [_vm._v("Post")]
-                ),
-                _vm._v(" "),
-                _c("div", { staticClass: "clearfix" }),
-                _vm._v(" "),
-                _c("hr"),
-                _vm._v(" "),
-                _c("ul", { staticClass: "media-list" }, [
-                  _c("li", { staticClass: "media" }, [
-                    _c(
-                      "a",
-                      { staticClass: "pull-left", attrs: { href: "#" } },
-                      [
-                        _c("img", {
-                          staticClass: "img-circle",
-                          attrs: {
-                            src: "https://bootdey.com/img/Content/user_1.jpg",
-                            alt: ""
-                          }
-                        })
-                      ]
-                    ),
-                    _vm._v(" "),
-                    _c("div", { staticClass: "media-body" }, [
-                      _c("span", { staticClass: "text-muted pull-right" }, [
-                        _c("small", { staticClass: "text-muted" }, [
-                          _vm._v("30 min ago")
-                        ])
-                      ]),
-                      _vm._v(" "),
-                      _c("strong", { staticClass: "text-success" }, [
-                        _vm._v("@MartinoMont")
-                      ]),
-                      _vm._v(" "),
-                      _c("p", [
-                        _vm._v(
-                          "\n                                        Lorem ipsum dolor sit amet, consectetur adipiscing elit.\n                                        Lorem ipsum dolor sit amet, "
-                        ),
-                        _c("a", { attrs: { href: "#" } }, [
-                          _vm._v("#consecteturadipiscing ")
-                        ]),
-                        _vm._v(".\n                                    ")
-                      ])
-                    ])
+              _c("br"),
+              _vm._v(" "),
+              _c(
+                "button",
+                {
+                  staticClass: "btn btn-info pull-right",
+                  attrs: { type: "button" }
+                },
+                [_vm._v("Post")]
+              ),
+              _vm._v(" "),
+              _c("div", { staticClass: "clearfix" }),
+              _vm._v(" "),
+              _c("hr"),
+              _vm._v(" "),
+              _c("ul", { staticClass: "media-list" }, [
+                _c("li", { staticClass: "media" }, [
+                  _c("a", { staticClass: "pull-left", attrs: { href: "#" } }, [
+                    _c("img", {
+                      staticClass: "img-circle",
+                      attrs: {
+                        src: "https://bootdey.com/img/Content/user_1.jpg",
+                        alt: ""
+                      }
+                    })
                   ]),
                   _vm._v(" "),
-                  _c("li", { staticClass: "media" }, [
-                    _c(
-                      "a",
-                      { staticClass: "pull-left", attrs: { href: "#" } },
-                      [
-                        _c("img", {
-                          staticClass: "img-circle",
-                          attrs: {
-                            src: "https://bootdey.com/img/Content/user_2.jpg",
-                            alt: ""
-                          }
-                        })
-                      ]
-                    ),
-                    _vm._v(" "),
-                    _c("div", { staticClass: "media-body" }, [
-                      _c("span", { staticClass: "text-muted pull-right" }, [
-                        _c("small", { staticClass: "text-muted" }, [
-                          _vm._v("30 min ago")
-                        ])
-                      ]),
-                      _vm._v(" "),
-                      _c("strong", { staticClass: "text-success" }, [
-                        _vm._v("@LaurenceCorreil")
-                      ]),
-                      _vm._v(" "),
-                      _c("p", [
-                        _vm._v(
-                          "\n                                        Lorem ipsum dolor sit amet, consectetur adipiscing elit.\n                                        Lorem ipsum dolor "
-                        ),
-                        _c("a", { attrs: { href: "#" } }, [
-                          _vm._v("#ipsumdolor ")
-                        ]),
-                        _vm._v(
-                          "adipiscing elit.\n                                    "
-                        )
+                  _c("div", { staticClass: "media-body" }, [
+                    _c("span", { staticClass: "text-muted pull-right" }, [
+                      _c("small", { staticClass: "text-muted" }, [
+                        _vm._v("30 min ago")
                       ])
+                    ]),
+                    _vm._v(" "),
+                    _c("strong", { staticClass: "text-success" }, [
+                      _vm._v("@MartinoMont")
+                    ]),
+                    _vm._v(" "),
+                    _c("p", [
+                      _vm._v(
+                        "\n                                        Lorem ipsum dolor sit amet, consectetur adipiscing elit.\n                                        Lorem ipsum dolor sit amet, "
+                      ),
+                      _c("a", { attrs: { href: "#" } }, [
+                        _vm._v("#consecteturadipiscing ")
+                      ]),
+                      _vm._v(".\n                                    ")
                     ])
+                  ])
+                ]),
+                _vm._v(" "),
+                _c("li", { staticClass: "media" }, [
+                  _c("a", { staticClass: "pull-left", attrs: { href: "#" } }, [
+                    _c("img", {
+                      staticClass: "img-circle",
+                      attrs: {
+                        src: "https://bootdey.com/img/Content/user_2.jpg",
+                        alt: ""
+                      }
+                    })
                   ]),
                   _vm._v(" "),
-                  _c("li", { staticClass: "media" }, [
-                    _c(
-                      "a",
-                      { staticClass: "pull-left", attrs: { href: "#" } },
-                      [
-                        _c("img", {
-                          staticClass: "img-circle",
-                          attrs: {
-                            src: "https://bootdey.com/img/Content/user_3.jpg",
-                            alt: ""
-                          }
-                        })
-                      ]
-                    ),
-                    _vm._v(" "),
-                    _c("div", { staticClass: "media-body" }, [
-                      _c("span", { staticClass: "text-muted pull-right" }, [
-                        _c("small", { staticClass: "text-muted" }, [
-                          _vm._v("30 min ago")
-                        ])
-                      ]),
-                      _vm._v(" "),
-                      _c("strong", { staticClass: "text-success" }, [
-                        _vm._v("@JohnNida")
-                      ]),
-                      _vm._v(" "),
-                      _c("p", [
-                        _vm._v(
-                          "\n                                        Lorem ipsum dolor "
-                        ),
-                        _c("a", { attrs: { href: "#" } }, [_vm._v("#sitamet")]),
-                        _vm._v(
-                          " sit amet, consectetur adipiscing\n                                        elit.\n                                    "
-                        )
+                  _c("div", { staticClass: "media-body" }, [
+                    _c("span", { staticClass: "text-muted pull-right" }, [
+                      _c("small", { staticClass: "text-muted" }, [
+                        _vm._v("30 min ago")
                       ])
+                    ]),
+                    _vm._v(" "),
+                    _c("strong", { staticClass: "text-success" }, [
+                      _vm._v("@LaurenceCorreil")
+                    ]),
+                    _vm._v(" "),
+                    _c("p", [
+                      _vm._v(
+                        "\n                                        Lorem ipsum dolor sit amet, consectetur adipiscing elit.\n                                        Lorem ipsum dolor "
+                      ),
+                      _c("a", { attrs: { href: "#" } }, [
+                        _vm._v("#ipsumdolor ")
+                      ]),
+                      _vm._v(
+                        "adipiscing elit.\n                                    "
+                      )
+                    ])
+                  ])
+                ]),
+                _vm._v(" "),
+                _c("li", { staticClass: "media" }, [
+                  _c("a", { staticClass: "pull-left", attrs: { href: "#" } }, [
+                    _c("img", {
+                      staticClass: "img-circle",
+                      attrs: {
+                        src: "https://bootdey.com/img/Content/user_3.jpg",
+                        alt: ""
+                      }
+                    })
+                  ]),
+                  _vm._v(" "),
+                  _c("div", { staticClass: "media-body" }, [
+                    _c("span", { staticClass: "text-muted pull-right" }, [
+                      _c("small", { staticClass: "text-muted" }, [
+                        _vm._v("30 min ago")
+                      ])
+                    ]),
+                    _vm._v(" "),
+                    _c("strong", { staticClass: "text-success" }, [
+                      _vm._v("@JohnNida")
+                    ]),
+                    _vm._v(" "),
+                    _c("p", [
+                      _vm._v(
+                        "\n                                        Lorem ipsum dolor "
+                      ),
+                      _c("a", { attrs: { href: "#" } }, [_vm._v("#sitamet")]),
+                      _vm._v(
+                        " sit amet, consectetur adipiscing\n                                        elit.\n                                    "
+                      )
                     ])
                   ])
                 ])
@@ -86606,8 +86660,8 @@ var mutations = {
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-__webpack_require__(/*! /home/mahin/Desktop/Github/Blog/resources/js/app.js */"./resources/js/app.js");
-module.exports = __webpack_require__(/*! /home/mahin/Desktop/Github/Blog/resources/sass/app.scss */"./resources/sass/app.scss");
+__webpack_require__(/*! /home/mahin/Downloads/nes/resources/js/app.js */"./resources/js/app.js");
+module.exports = __webpack_require__(/*! /home/mahin/Downloads/nes/resources/sass/app.scss */"./resources/sass/app.scss");
 
 
 /***/ })

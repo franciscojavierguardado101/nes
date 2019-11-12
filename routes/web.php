@@ -12,7 +12,7 @@
 */
 
 Route::get('/', function () {
-//    \Illuminate\Support\Facades\Auth::logout();
+    //    \Illuminate\Support\Facades\Auth::logout();
     return view('layouts.app');
 });
 
@@ -25,5 +25,7 @@ Auth::routes();
 Route::get('/home', 'HomeController@index')
      ->name('home');
 
-Route::post('/post/create','PostController@store');
-Route::get('/post','PostController@index');
+Route::post('/post/create', 'PostController@store');
+Route::get('/post', 'PostController@index');
+Route::get('/post/{id}', 'PostController@show');
+

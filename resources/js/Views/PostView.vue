@@ -3,19 +3,13 @@
         <div class="container text-center">
 
             <figure class="figure">
-                <img src="https://loremflickr.com/320/240" class="figure-img img-fluid" alt="...">
+                <img v-bind:src="getPostImage" class="figure-img img-fluid" alt="...">
             </figure>
 
             <blockquote class="blockquote">
-                <p class="mb-0">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a
-                    ante.</p>
+                <p class="mb-0">{{this.post.title}}</p>
             </blockquote>
-            <p>Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the
-                industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and
-                scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap
-                into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the
-                release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing
-                software like Aldus PageMaker including versions of Lorem Ipsum. </p>
+            <p>{{this.post.description}}</p>
 
         </div>
         <div class="text-center row bootstrap snippets">
@@ -91,7 +85,26 @@
 
 <script>
     export default {
-        name: "PostView"
+        name: "PostView", data: function () {
+            return {
+                post: '',
+            }
+        }, beforeCreate() {
+            axios.get('/post/' + this.$route.params.postId).then((response) => {
+                    this.post = response.data
+                })
+                .catch(function (error) {
+                    console.log(error);
+                });
+        }, computed: {
+            getPostImage() {
+                if (this.post.image) {
+                    return this.post.image
+                } else {
+                    return "";
+                }
+            }
+        }
     }
 </script>
 

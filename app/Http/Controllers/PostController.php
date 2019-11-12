@@ -12,12 +12,10 @@ class PostController extends Controller {
     //PostController constructor.
 
     public function __construct() {
-        $this->middleware('auth');
     }
 
     public function index() {
-        $user = Auth::user();
-        $post = $user->posts;
+        $post = Post::paginate(5);
         return $post; //view all posts of the user
     }
 
@@ -39,8 +37,8 @@ class PostController extends Controller {
     }
 
     public function show($id) {
-        $posts = Post::findOrFail($id);
-        return view('posts.show', ['post' => $posts]);
+        $post = Post::findOrFail($id);
+        return $post;
     }
 
 
